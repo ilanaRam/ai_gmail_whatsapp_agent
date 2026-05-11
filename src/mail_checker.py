@@ -6,7 +6,16 @@ from colorama import Fore, Style, init # for printing in colors
 from dotenv import load_dotenv
 import os
 
+
+"""
+This is a mail checker - is knows only about Gmail, it knows nothing about the MCP 
+it will work even if we never connect MCP 
+it is called "Separation of Concerns"
+"""
+
+
 load_dotenv()
+
 
 colors_dict = {0: Fore.YELLOW,
                1: Fore.CYAN,
@@ -25,6 +34,7 @@ colors_dict = {0: Fore.YELLOW,
 MY_EMAIL= os.getenv('MY_EMAIL')
 EMAIL_PASSWORD = os.getenv('EMAIL_PASSWORD') # this is a password i created in my gmail account for Python application called 'AI agent'
 IMAP_SERVER = os.getenv('IMAP_SERVER')
+
 
 def check_email(from_sender,
                 subject,):
