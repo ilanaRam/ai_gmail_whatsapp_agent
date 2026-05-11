@@ -2,10 +2,24 @@
 import imaplib                   # to work with imap protocol that makes receiving of the mails available
 import email                     # to work with email
 import inspect
+from colorama import Fore, Style, init # for printing in colors
 from dotenv import load_dotenv
 import os
 
 load_dotenv()
+
+colors_dict = {0: Fore.YELLOW,
+               1: Fore.CYAN,
+               2: Fore.RED,
+               3: Fore.BLUE,
+               4: Fore.GREEN,
+               5: Fore.MAGENTA,
+               6: Fore.LIGHTRED_EX,
+               7: Fore.LIGHTBLUE_EX,
+               8: Fore.LIGHTCYAN_EX,
+               9: Fore.LIGHTGREEN_EX}
+
+
 
 # --- GMAIL CONFIGURATION ---
 MY_EMAIL= os.getenv('MY_EMAIL')
@@ -15,12 +29,12 @@ IMAP_SERVER = os.getenv('IMAP_SERVER')
 def check_email(from_sender,
                 subject,):
     func_name = inspect.currentframe().f_code.co_name
-    print(f"func: {func_name}() - called")
+    print(colors_dict[0] + f"func: {func_name}() - called")
 
     try:
         # Connect to the gmail mail IMAP server (protocol IMAP to receive mails) in secure way (SSL)
 
-        print(f"define an object to work with mail IMAP server of GMAIL")
+        print(f"Define an object to work with mail IMAP server of GMAIL")
         mail_gmail_server = imaplib.IMAP4_SSL(IMAP_SERVER)
 
         print(f"Using this object to login gmail mail server")
@@ -87,5 +101,6 @@ def check_email(from_sender,
         # return any way
         return subject, from_sender
     except Exception as e:
-        print(f"Error: {e}")
+        print(colors_dict[2] + f"Error: {e}")
+        # print(f"Error: {e}")
         return None, None  # Always return a pair so the caller doesn't crash!
