@@ -37,7 +37,7 @@ IMAP_SERVER = os.getenv('IMAP_SERVER')
 
 
 def check_email(from_sender,
-                subject,):
+                subject):
     func_name = inspect.currentframe().f_code.co_name
     print(colors_dict[0] + f"func: {func_name}() - called")
 

@@ -2,23 +2,13 @@ from mcp.server.fastmcp import FastMCP # this class creates my MCP server
 import threading # to run MCP server in a thread (9)as it is a blocking functionality)
 import sys
 import os
-
-"""
-this line makes sure Python can find your src folder when importing from it
-# why we ndd these lines: 
-__file__                  is a special Python variable, it contains the full path of the current file: C:\Users\PRIVATE_ILANA\...\ai_gmail_whatsapp_agent\mcp_server.py
-os.path.abspath(__file__) converts the path to an absolute full path (in case it was relative)
-os.path.dirname(...)      takes the path and returns only the folder part (removes the filename)
-sys.path.append(...)      sys.path - is a list of folders where Python looks for modules to import, append - adds your project root folder to that list
-"""
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-
-from mail_checker import check_email
-from whatsapp_sender import send_whatsapp
-
+from src.mail_checker import check_email
+from src.whatsapp_sender import send_whatsapp
 from dotenv import load_dotenv
 
 load_dotenv()
+
+
 
 # Create the MCP server and give it a name
 my_mcp_server = FastMCP("ai_gmail_whatsapp_agent")
@@ -27,7 +17,6 @@ my_mcp_server = FastMCP("ai_gmail_whatsapp_agent")
 # this function actually runs MCP server in the thread
 def run_mcp_server():
     print("MCP Server thread is starting...")
-
     # run function 'in a thread' (start MCP server in a background thread)
     mcp_thread = threading.Thread(target=my_mcp_server.run)
     mcp_thread.daemon = True  # thread will stop when main stops
@@ -59,13 +48,33 @@ def tool_check_email(from_sender: str, subject: str):
 # tool() is api of the class FastMCP that registers this api as a tool
 # tell MCP object (my_mcp_server) to register this function as a tool that AI can use
 @my_mcp_server.tool()
-def tool_send_whatsapp(subject: str, sender: str):
+def tool_send_whatsapp(from_sender: str, subject: str):
     # tool_send_whatsapp actually wraps my function send_whatsapp() and returns it's result as a dictionary
-    send_whatsapp(subject=subject, sender=sender)
+    send_whatsapp(subject=subject, sender=from_sender)
 
     # good practice to return dict as AI tools easily work with dicts (read and understand dics)
     return {
             "status": "sent",
             "subject": subject,
-            "sender": sender
+            "sender": from_sender
            }
+
+
+#upon running just the MCP server:
+# (.venv) PS C:\Users\PRIVATE_ILANA\PHYTHON_HOW_TO\_repos\ai_gmail_whatsapp_agent> python .\src\mcp_server.py
+#
+# we should see this output:
+# We are about to run MCP in a thread ...
+# MCP Server thread is starting...
+# Registered tools: ['tool_check_email', 'tool_send_whatsapp']
+
+
+
+if __name__ == "__main__":
+    print("We are about to run MCP in a thread ...")
+    run_mcp_server()
+    print(f"Registered tools: {[tool for tool in my_mcp_server._tool_manager._tools]}")
+
+    # keep main thread alive so daemon thread keeps running
+    while True:
+        pass
