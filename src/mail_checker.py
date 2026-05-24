@@ -41,6 +41,10 @@ def check_email(from_sender,
     func_name = inspect.currentframe().f_code.co_name
     print(colors_dict[0] + f"func: {func_name}() - called")
 
+    # This api reads gmail and bring UNSEEN (unread) mails from specific Sender (from) and with specific Subject
+    # if there will not be such mail - will return null
+    # if there will be several such mails -> ???
+
     try:
         # Connect to the gmail mail IMAP server (protocol IMAP to receive mails) in secure way (SSL)
 
