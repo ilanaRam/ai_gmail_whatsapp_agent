@@ -5,10 +5,17 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="9bbd90d7-bbb8-4cd5-8941-4d4e1fa50954" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.env" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/README.md.docx" beforeDir="false" afterPath="$PROJECT_DIR$/README.md.docx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ai_agent_main.py" beforeDir="false" afterPath="$PROJECT_DIR$/agent_mail_checker_whatsapp_sender.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/google_calendar_credentials.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/text_from_voice.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/voice.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/voice.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/voice_recording.wav" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/token.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/voice_recording.wav" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/~WRL3340.tmp" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/~WRL3809.tmp" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -52,6 +59,8 @@
 }</component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\PRIVATE_ILANA\PHYTHON_HOW_TO\_repos\ai_gmail_whatsapp_agent\products" />
+      <recent name="C:\Users\PRIVATE_ILANA\PHYTHON_HOW_TO\_repos\ai_gmail_whatsapp_agent\resources" />
       <recent name="C:\Users\PRIVATE_ILANA\PHYTHON_HOW_TO\_repos\ai_gmail_whatsapp_agent\src" />
     </key>
   </component>

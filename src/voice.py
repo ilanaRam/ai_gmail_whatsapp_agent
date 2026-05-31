@@ -23,8 +23,8 @@ WHISPER_MODEL = "base"
 SAMPLE_RATE = 44100        # standard audio sample rate
 SILENCE_THRESHOLD = 0.01   # keep recording till silence (volume level considered as silence)
 SILENCE_DURATION = 3       # stop after 5 seconds of silence
-MY_VOICE_RECORDED_FILE = "voice_recording.wav"
-MY_TEXT_FILE = "text_from_voice.txt"
+MY_VOICE_RECORDED_FILE = "../results/voice_recording.wav"
+MY_TEXT_FILE = "../results/text_from_voice.txt"
 
 def record_voice():
     func_name = inspect.currentframe().f_code.co_name
