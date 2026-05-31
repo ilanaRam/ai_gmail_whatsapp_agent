@@ -31,9 +31,9 @@ colors_dict = {0: Fore.YELLOW,
 
 
 # --- GMAIL CONFIGURATION ---
-MY_EMAIL= os.getenv('MY_EMAIL')
-EMAIL_PASSWORD = os.getenv('EMAIL_PASSWORD') # this is a password i created in my gmail account for Python application called 'AI agent'
-IMAP_SERVER = os.getenv('IMAP_SERVER')
+MY_EMAIL= os.getenv('GOOGLE_GMAIL')
+EMAIL_PASSWORD = os.getenv('GOOGLE_GMAIL_PASSWORD') # this is a password i created in my gmail account for Python application called 'AI agent'
+IMAP_SERVER = os.getenv('GOOGLE_GMAIL_IMAP_SERVER')
 
 
 def check_email(from_sender,

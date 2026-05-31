@@ -16,7 +16,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-MY_EMAIL = os.getenv('MY_EMAIL')
+MY_EMAIL = os.getenv('GOOGLE_GMAIL')
 
 def get_user_input():
     func_name = inspect.currentframe().f_code.co_name
@@ -66,7 +66,6 @@ async def mcp_main():
     mcp_obj.run_mcp_server()
 
     while True:
-
         result = await mcp_obj.my_mcp_server.call_tool("tool_check_email",  # tool name
                                                       {  # params that tool function receives:
                                                           "from_sender": MY_EMAIL,  # from
@@ -80,7 +79,7 @@ async def mcp_main():
         data = json.loads(result[0].text)
         mail_subject = data["subject"]
         mail_sender = data["sender"]
-        print(f"Retails: mail_subject = {mail_subject}, mail_sender = {mail_sender}\n")
+        print(f"Details: mail_subject = {mail_subject}, mail_sender = {mail_sender}\n")
 
         if not mail_subject or not mail_sender or mail_subject != expected_subject or MY_EMAIL not in mail_sender:
             print(f"{func_name}: NOTHING TO SEND TO WHATSAPP !!!!\n")

@@ -1,3 +1,4 @@
+import json
 import os
 import inspect
 
@@ -20,18 +21,13 @@ load_dotenv()
 #--------------------------------------------------------
 SCOPES = ['https://www.googleapis.com/auth/calendar.events']
 
-# what is credentials.json file:
-# this file hold passwords - you should not tell or show or upload this file to git
-# it contains permanent secretes from Google, we got them when I set up my app
-# It contains secret codes (like a username and password) that prove your app is allowed to talk to Google.
-# Google doesn’t trust apps by default. You need to prove your app is allowed to access your calendar
-CREDENTIALS_FILE_NAME = 'google_calendar_credentials.json'
-
 # what is token.json file:
 # This file is created automatically the first time you run the app.
 # It stores a temporary access token (like a temporary pass) so you don’t have to 'log in' every time. It is like "remember me"
 # each time the code will run it will check if token.json exists - if yes it will not rewrite it else it will perform log in and token.json will be re created
 TOKEN_FILE = 'token.json'
+
+calendar_service_obj = None  # global google calendar connection obj
 
 def connect_to_google_calendar():
     """
@@ -43,8 +39,20 @@ def connect_to_google_calendar():
     func_name = inspect.currentframe().f_code.co_name
     print(f"{func_name}: called")
 
+    global calendar_service_obj  # ← use globaly
+
     my_app_creds = None
 
+    client_config_dict = {
+        "installed": {
+            "client_id": os.getenv('GOOGLE_CALENDAR_CLIENT_ID'),
+            "project_id": os.getenv('GOOGLE_CALENDAR_PROJECT_ID'),
+            "auth_uri": os.getenv('GOOGLE_CALENDAR_AUTH_URI'),
+            "token_uri": os.getenv('GOOGLE_CALENDAR_TOKEN_URI'),
+            "client_secret": os.getenv('GOOGLE_CALENDAR_CLIENT_SECRET'),
+            "redirect_uris": ["http://localhost"] # cannot be loaded from .env (as .env is good for simple key value and all is stored as string, here we need a list
+        }
+    }
     # token.json stores the user's access token
     # it is created automatically on first login
     if os.path.exists(TOKEN_FILE):
@@ -55,19 +63,22 @@ def connect_to_google_calendar():
         if my_app_creds and my_app_creds.expired and my_app_creds.refresh_token:
             my_app_creds.refresh(Request())
         else:
-            flow = InstalledAppFlow.from_client_secrets_file(CREDENTIALS_FILE_NAME, SCOPES)
+            flow = InstalledAppFlow.from_client_config(client_config_dict, # dict with credentials
+                                                       SCOPES)             # list of scopes (permissions)
             my_app_creds = flow.run_local_server(port=0)
 
         # save credentials for next run
         with open(TOKEN_FILE, 'w') as token:
             token.write(my_app_creds.to_json())
 
-    # build the calendar service object
+    # update the 'global' calendar service obj
     calendar_service_obj = build('calendar',
                                 'v3',
                                 credentials=my_app_creds)
-    print(f"{func_name}: App is connected to Google Calendar successfully!")
-    return calendar_service_obj
+    if calendar_service_obj:
+        print(f"{func_name}: App is connected to Google Calendar successfully, calendar_service_obj is: {calendar_service_obj}")
+    else:
+        print(f"{func_name}: App failed to connect to Google Calendar ###")
 
 
 if __name__ == "__main__":

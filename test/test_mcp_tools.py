@@ -2,6 +2,8 @@ import sys
 import os
 import asyncio
 import src.mcp_server as mcp_obj
+
+
 # ---------------------------------------------------------
 # async def      This function may wait for something
 # await          Wait here but don't block everything else
@@ -60,6 +62,14 @@ async def test_send_whatsapp_tool():
     print(f"tool_check_email result: {result}\n")
 
 
+async def test_connect_to_google_calendar_tool():
+    print("Testing MCP tool connect_to_google_calendar ... directly()\n")
+
+    result = await mcp_obj.my_mcp_server.call_tool("tool_connect_to_google_calendar", # tool name
+                                                   {})                                # params
+    print(f"connect_to_google_calendar_tool result: {result}\n")
+
+
 if __name__ == "__main__":
 
     # Your normal main code is not async — it's regular code.
@@ -69,4 +79,5 @@ if __name__ == "__main__":
     # main()           -> asyncio.run()   ->  test_check_mail_tool()
 
     #asyncio.run(test_check_email_tool())
-    asyncio.run(test_send_whatsapp_tool())
+    #asyncio.run(test_send_whatsapp_tool())
+    asyncio.run(test_connect_to_google_calendar_tool())

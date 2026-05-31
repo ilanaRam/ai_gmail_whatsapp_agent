@@ -2,13 +2,16 @@ from mcp.server.fastmcp import FastMCP # this class creates my MCP server
 import threading # to run MCP server in a thread (9)as it is a blocking functionality)
 import sys
 import os
-from src.mail_checker import check_email
-from src.whatsapp_sender import send_whatsapp
+#from src.mail_checker import check_email
+# from src.whatsapp_sender import send_whatsapp
+# from src.calendar_checker import connect_to_google_calendar
+import src.mail_checker as check_email
+import src.whatsapp_sender as send_whatsapp
+import src.calendar_checker as connect_to_google_calendar
+
+
 from dotenv import load_dotenv
-
 load_dotenv()
-
-
 
 # Create the MCP server and give it a name
 my_mcp_server = FastMCP("ai_gmail_whatsapp_agent")
@@ -32,7 +35,7 @@ def run_mcp_server():
 @my_mcp_server.tool()
 def tool_check_email(from_sender: str, subject: str):
     # tool_check_email actually wraps my function check_email() and returns it's result as a dictionary
-    subject_result, sender_result = check_email(from_sender=from_sender, subject=subject)
+    subject_result, sender_result = check_email.check_email(from_sender=from_sender, subject=subject)
 
     # good practice to return dict as AI tools easily work with dicts (read and understand dics)
     return {
@@ -50,7 +53,7 @@ def tool_check_email(from_sender: str, subject: str):
 @my_mcp_server.tool()
 def tool_send_whatsapp(from_sender: str, subject: str):
     # tool_send_whatsapp actually wraps my function send_whatsapp() and returns it's result as a dictionary
-    send_whatsapp(subject=subject, sender=from_sender)
+    send_whatsapp.send_whatsapp(subject=subject, sender=from_sender)
 
     # good practice to return dict as AI tools easily work with dicts (read and understand dics)
     return {
@@ -59,8 +62,22 @@ def tool_send_whatsapp(from_sender: str, subject: str):
             "sender": from_sender
            }
 
+@my_mcp_server.tool()
+def tool_connect_to_google_calendar():
+    # tool_send_whatsapp actually wraps my function send_whatsapp() and returns it's result as a dictionary
+    connect_to_google_calendar.connect_to_google_calendar()
 
-#upon running just the MCP server:
+    # !!! we cannot return complex python obj in json that planned for simple python types'
+    # we can use global variables, once connected the connection obj is created as global and available to all
+
+    if connect_to_google_calendar.calendar_service_obj:
+        return {"status": "connected"}
+    else:
+        return {"status": "failed"}
+
+
+
+# upon running just the MCP server:
 # (.venv) PS C:\Users\PRIVATE_ILANA\PHYTHON_HOW_TO\_repos\ai_gmail_whatsapp_agent> python .\src\mcp_server.py
 #
 # we should see this output:
@@ -72,8 +89,11 @@ def tool_send_whatsapp(from_sender: str, subject: str):
 
 if __name__ == "__main__":
     print("We are about to run MCP in a thread ...")
+
     run_mcp_server()
-    print(f"Registered tools: {[tool for tool in my_mcp_server._tool_manager._tools]}")
+
+    print(f"Registered tools: {[tool 
+                                for tool in my_mcp_server._tool_manager._tools]}")
 
     # keep main thread alive so daemon thread keeps running
     while True:
