@@ -14,17 +14,43 @@ import sounddevice as sd
 import soundfile as sf
 import whisper
 import numpy as np
+import datetime
 from dotenv import load_dotenv
 
 load_dotenv()
 
 # Whisper model - base is good balance of speed and accuracy
-WHISPER_MODEL = "base"
-SAMPLE_RATE = 44100        # standard audio sample rate
-SILENCE_THRESHOLD = 0.01   # keep recording till silence (volume level considered as silence)
-SILENCE_DURATION = 3       # stop after 5 seconds of silence
-MY_VOICE_RECORDED_FILE = "../results/voice_recording.wav"
-MY_TEXT_FILE = "../results/text_from_voice.txt"
+WHISPER_MODEL = "small" # small more accurate model but slower than "base" that is faster but less accurate
+SAMPLE_RATE = 16000   # 16000 is optimal for Whisper, while 44100 standard audio sample rate but makes more conversions
+SILENCE_THRESHOLD = 0.015  # keep recording till silence (volume level considered as silence)
+# Why 0.015:
+# Your background noise peaks at 0.0118
+# 0.015 is safely above that
+# When you speak — volume will be much higher (0.1 - 0.9)
+# When silent — volume stays below 0.015 → recording stops
+
+SILENCE_DURATION = 4       # stop after 5 seconds of silence
+
+
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) # => here we will have a root of the project
+# explanation:
+# __file__ returns special Python variable that contains the path of the current file, sometime ir can be relative path and sometimes it can be full path
+# it depends on how did we run it:
+# python -m src.voice => returns full path
+# python src/voice => returns relative path
+
+# os.path.abspath(__file__)
+# creates a full complete path from any path (relative / full) no shortcuts, no relative paths
+
+# os.path.dirname(path) returns me 1 level up. gives me the parent folder" of whatever path I give
+# C:\Users\PRIVATE_ILANA\ai_gmail_whatsapp_agent\src\voice.py => dirname removes this part => we get:
+# C:\Users\PRIVATE_ILANA\ai_gmail_whatsapp_agent\src  => dirname removes this part => we get:
+# C:\Users\PRIVATE_ILANA\ai_gmail_whatsapp_agent  ← project root
+RESULTS_FOLDER = os.path.join(PROJECT_ROOT, 'Results')
+
+MY_VOICE_RECORDED_FILE_NAME = "voice_recording.wav"
+MY_TEXT_FILE_NAME = "text_from_voice.txt"
+
 
 def record_voice():
     func_name = inspect.currentframe().f_code.co_name
@@ -88,7 +114,7 @@ def record_voice():
         while silence_counter < (SAMPLE_RATE / 1024 * SILENCE_DURATION):
             sd.sleep(100)
 
-    print(f"[{func_name}]: Recording stopped — silence detected!")
+    print(f"[{func_name}]: Recording finished because —> silence detected!")
 
     if not recorded_chunks:
         return None
@@ -112,6 +138,12 @@ def record_voice():
     # ve return raw audio and not the wav file because we wish to translate it into text before we create wav file
     return concatenated_audio
 
+def normalize_audio(audio):
+    # normalize volume to maximum level
+    max_val = np.max(np.abs(audio))
+    if max_val > 0:
+        audio = audio / max_val
+    return audio
 
 def transcribe_voice(audio_file: str):
     func_name = inspect.currentframe().f_code.co_name
@@ -129,18 +161,35 @@ def transcribe_voice(audio_file: str):
     # the func works but creates warning: "FP16 is not supported on CPU; using FP32 instead"
     # it means: Whisper prefers FP16 for speed — but your PC is running Whisper on CPU (not on GPU), so it automatically falls back to FP32.
 
-    result = model.transcribe(audio_file)
+    result = model.transcribe(audio_file,    # raw audio data -> to transcript into the text
+                              language='he') # here we say that the data is in hebrew
     text = result["text"]
     print(f"[{func_name}]: Transcription: {text}")
     return text
 
-def log_textual_output(my_text):
+def create_results_subfolder():
     func_name = inspect.currentframe().f_code.co_name
     print(f"[{func_name}]: called")
 
-    print(f"[{func_name}]: writing text to text file: {MY_TEXT_FILE}")
-    with open(file=MY_TEXT_FILE, mode="w") as my_text_file:
-        my_text_file.write(my_text)
+    print(f"[{"main"}]: Will be checked if folder Results exists in the project under the root, if not Results will be added else,\n"
+          f" under Results will be added new sub folder with Data and time in it's name,\n"
+          f"under it will be located 2 results: wav and txt files")
+
+    # create results folder 'if not exists'
+    os.makedirs(RESULTS_FOLDER, exist_ok=True)
+
+    # create subfolder name with current date and time
+    now = datetime.datetime.now()
+    subfolder_name = now.strftime("%Y-%m-%d_%H-%M-%S")
+
+    # full path of new subfolder
+    subfolder_path = os.path.join(RESULTS_FOLDER, subfolder_name)
+
+    # create the subfolder
+    os.makedirs(subfolder_path, exist_ok=True)
+
+    print(f"[{func_name}]: created subfolder: {subfolder_path}")
+    return subfolder_path
 
 
 
@@ -149,18 +198,31 @@ if __name__ == "__main__":
     func_name = inspect.currentframe().f_code.co_name
     print(f"[{"main"}]: called")
 
+    results_subfolder_path = create_results_subfolder()
+    wav_file_path = os.path.join(results_subfolder_path, MY_VOICE_RECORDED_FILE_NAME)
+
     raw_audio_data = record_voice() # returned NumPy array (not wav file)
     if len(raw_audio_data) == 0:
         print(f"[{"main"}]: Empty raw audio file, NO file can be created XXXXX...")
     else:
-        print(f"[{"main"}]: Raw audio file created, now will be created wav file VVVV ...")
-        # Save the NumPy array to a WAV file: MY_RECORD
-        sf.write(MY_VOICE_RECORDED_FILE, raw_audio_data, SAMPLE_RATE)
+        print(f"[{"main"}]: Raw audio data created")
 
-        print(f"[{"main"}]: Will be created text file, using Whisper package ...")
-        text = transcribe_voice(MY_VOICE_RECORDED_FILE)
-        print(f"[{"main"}]: You said: {text}")
+        print(f"[{"main"}]: Normalize audio before saving ...")
+        raw_audio_data = normalize_audio(raw_audio_data)
 
-        log_textual_output(text)
+        print(f"[{"main"}]: Creating wav file ...saving the raw audio data into wav file")
+        # Creation of the wav file - save the NumPy array to a WAV file
+        sf.write(wav_file_path,  # full_path  -> full wav file name (path + file name)
+                 raw_audio_data, # data       -> raw audio data
+                 SAMPLE_RATE)
 
-        # add AI to understand what was actually said
+        print(f"[{"main"}]: Creating transcript (text file from audio), using Whisper package ...")
+        text = transcribe_voice(wav_file_path)
+        if not text:
+            print(f"[{"main"}]: Empty transcript file (text file) XXXXX...")
+        else:
+            text_file_path = os.path.join(results_subfolder_path, MY_TEXT_FILE_NAME)
+
+            print(f"[{func_name}]: writing text to text file: {text_file_path}")
+            with open(file=text_file_path, mode="w", encoding='utf-8') as my_text_file:
+                my_text_file.write(text)
