@@ -8,6 +8,7 @@ import os
 import src.mail_checker as check_email
 import src.whatsapp_sender as send_whatsapp
 import src.calendar_checker as connect_to_google_calendar
+import src.ai_analyzer as ai_analyzer
 
 
 from dotenv import load_dotenv
@@ -75,7 +76,17 @@ def tool_connect_to_google_calendar():
     else:
         return {"status": "failed"}
 
+@my_mcp_server.tool()
+def tool_analyze_text(text):
+    # tool_send_whatsapp actually wraps my function send_whatsapp() and returns it's result as a dictionary
+    analyzed_data = ai_analyzer.analyze_text(text)
 
+    # !!! we cannot return complex python obj in json that planned for simple python types'
+    # we can use global variables, once connected the connection obj is created as global and available to all
+
+    return {
+            "analyzed_data": analyzed_data
+           }
 
 # upon running just the MCP server:
 # (.venv) PS C:\Users\PRIVATE_ILANA\PHYTHON_HOW_TO\_repos\ai_gmail_whatsapp_agent> python .\src\mcp_server.py

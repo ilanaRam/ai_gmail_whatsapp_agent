@@ -69,9 +69,15 @@ async def test_connect_to_google_calendar_tool():
                                                    {})                                # params
     print(f"connect_to_google_calendar_tool result: {result}\n")
 
+async def test_analyze_text_tool():
+    print("Testing MCP tool analyzing teext ... directly()\n")
+    my_text = "היום אנו בתאריך 01/06/2026 בוא נקבע פגישה עם אלכס מחר בשעה שלוש אחר הצהריים לדון בפרויקט"
+    result = await mcp_obj.my_mcp_server.call_tool("tool_analyze_text", # tool name
+                                                   {my_text})                                # params
+    print(f"analyze_text_tool result: {result}\n")
+
 
 if __name__ == "__main__":
-
     # Your normal main code is not async — it's regular code.
     # So from this regular code to call async function we need asyncio.run() - this will act as a bridge:
 
@@ -80,4 +86,5 @@ if __name__ == "__main__":
 
     #asyncio.run(test_check_email_tool())
     #asyncio.run(test_send_whatsapp_tool())
-    asyncio.run(test_connect_to_google_calendar_tool())
+    #asyncio.run(test_connect_to_google_calendar_tool())
+    asyncio.run(test_analyze_text_tool())

@@ -83,16 +83,16 @@ def check_email(from_sender,
         _, data = mail_gmail_server.fetch(email_id, '(RFC822)')
         msg = email.message_from_bytes(data[0][1])
 
-        ''' ==================== Explanation to what is RFC822 ========================
-        RFC = Request for comments, in other wards it is a format of the mail. We define in what format we ask to get the mail from the server.
-        
-        If we will not define it, we might get just send you the size of the email or just the headers.
-        By saying fetch(latest_email_id, '(RFC822)'), we tell Gmail: 
-        "Give me the whole thing—the sender, the date, the subject, and the body—formatted exactly according to the international standard."
-        
-        Then we must convert a bytes (data) we get into the email obj into the email object (to be able to request from it the subject, the sender and so on)
-        so we did: email.message_from_bytes(data[0][1])            
-        ==============================================================================='''
+        # ''' ==================== Explanation to what is RFC822 ========================
+        # RFC = Request for comments, in other wards it is a format of the mail. We define in what format we ask to get the mail from the server.
+        #
+        # If we will not define it, we might get just send you the size of the email or just the headers.
+        # By saying fetch(latest_email_id, '(RFC822)'), we tell Gmail:
+        # "Give me the whole thing—the sender, the date, the subject, and the body—formatted exactly according to the international standard."
+        #
+        # Then we must convert a bytes (data) we get into the email obj into the email object (to be able to request from it the subject, the sender and so on)
+        # so we did: email.message_from_bytes(data[0][1])
+        # ==============================================================================='''
         print(f"Looking for subject: {subject} ...")
 
         if any(item in subject.split()
