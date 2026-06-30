@@ -20,13 +20,11 @@ def analyze_text(my_text: str):
     client = None
 
     gemini_api_key = os.getenv("GEMINI_API_KEY")
-    print(f"the API_KEY is: {gemini_api_key}")
     if not gemini_api_key:
-        raise ValueError("GEMINI_API_KEY is not set in .env or environment variables!")
-
+        raise ValueError(f"[{func_name}]: GEMINI_API_KEY is not set in .env or environment variables!")
     try:
         client = genai.Client(api_key=gemini_api_key)
-        print("Google GenAI Client initialized successfully!")
+        print(f"[{func_name}]: Google GenAI Client initialized successfully!")
 
         # # List available models
         # models = client.models.list()
@@ -37,7 +35,8 @@ def analyze_text(my_text: str):
         # model = client.models.generate_content(model="gemini-1.5-flash", contents="Hello, world!")
         # print("API key is valid!")
     except Exception as e:
-        print(f"API key is invalid: {e}")
+        print(f"[{func_name}]: API key is invalid: {e}")
+        return None
 
     my_prompt = f"""
     You are a smart calendar assistant that understands Hebrew speech.
@@ -69,9 +68,13 @@ def analyze_text(my_text: str):
     - Return ONLY JSON, no explanation
     """
     try:
+        print(f"[{func_name}]: Preparing model ...")
         model = client.models.generate_content(model=GEMINI_MODEL,
                                                contents=my_prompt)
+        if not model:
+            raise ValueError(f"[{func_name}]: Returned empty model")
         response = model.text # response is of type: GenerateContentResponse
+        print(f"[{func_name}]: AI Analyzed text is ready: {response}")
 
         # contains                   type          meaning
         # ------------------------------------------------------------------------------------------
@@ -80,21 +83,26 @@ def analyze_text(my_text: str):
         # response.prompt_feedback   object        info about the prompt
         # response.usage_metadata    object        token usage info
 
-        # clean response and parse JSON bring only json structure itself without a word json
+        # clean response returned as str, here we clean a word 'JSON' bring only structure itself without a word json
         clean_response = response.strip().replace('```json', '').replace('```', '').strip()
 
-        # parse it to Python dict:
+        # json.loads is deserializing = creating Python object from a string. string -> python obj DICT
         event_data = json.loads(clean_response)
+        # result = validity_check(event_data)
+        # if not result:
+        #     raise ValueError(f"[{func_name}]: Error found during creating event structure, some data is missing")
 
         print(f"[{func_name}]: Extracted event into python dict:\n{event_data}")
-        return calendar_event_data
+        # we return python obj DICT
+        return event_data
     except Exception as e:
-        print(f"Error during content generation or JSON parsing: {e}")
+        print(f"[{func_name}]: Error during content generation or JSON parsing: {e}")
         return None
+
 
 
 
 
 if __name__ == "__main__":
     test_text = "היום אנו בתאריך 01/06/2026 בוא נקבע פגישה עם אלכס מחר בשעה שלוש אחר הצהריים לדון בפרויקט"
-    calendar_event_data = analyze_text(test_text)
+    result = analyze_text(test_text)
