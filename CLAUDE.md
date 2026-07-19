@@ -13,6 +13,7 @@ A personal automation agent with two independent pipelines, both exposed as MCP 
 
 - Python 3.12, dependencies installed directly into `.venv` (no `requirements.txt`/`pyproject.toml` in the repo — check `.venv/Scripts/python.exe -m pip list` for the current set: `mcp`, `google-genai`, `google-api-python-client`, `google-auth-oauthlib`, `openai-whisper`, `torch`, `sounddevice`, `soundfile`, `twilio`, `python-dotenv`, `colorama`, `pytest`, `pytest-asyncio`).
 - Copy `.env.example` to `.env` and fill in real values before running anything — every module calls `load_dotenv()` and reads secrets via `os.getenv(...)`.
+- **Never read or display the contents of `.env` or any `token.json` file** (root, `src/`, `test/`) — they hold live secrets and OAuth tokens. Reference `.env.example` instead when you need to know which variables exist.
 - Whisper transcription requires `ffmpeg` on PATH (`winget install ffmpeg`).
 - Google Calendar auth is interactive on first use: `connect_to_google_calendar()` opens a browser (`InstalledAppFlow.run_local_server`) and writes `token.json` to the working directory. Subsequent runs reuse that token until it expires. There are stray `token.json` files at repo root, `src/`, and `test/` — the one that matters is whichever directory the process is run from (`TOKEN_FILE = 'token.json'` is a relative path in `src/calendar_checker.py`).
 

@@ -842,3 +842,27 @@ async def test_create_google_calendar_event_tool_parameterized(test_case_name, m
 
     assert actual_test_status == expected_test_status, print(f"❌ FAIL: Test Case '{test_case_name}' returned '{actual_test_status}' but expected '{expected_test_status}'.")
     print(f"✅ PASS: Test Case '{test_case_name}' behaved exactly as expected.")
+
+def test_2d_list_print():
+    #          0 1 2
+    my_list = [1,2,3, # 0
+               4,5,6, # 1
+               7,8,9] # 2
+    # row: 0, col (1,2,3)
+    # row: 1, col (4,5,6)
+    # row: 2, col (7,8,9)
+    N=3
+    for row in range(N): # 0 1 2
+        for col in range(N): # 0,1,2
+            print(f"\nthe row is {row}")
+            # col shifted by 3 , (row*3 is a shift)
+            # in row = 0 we get: [0]=1,[1]=2,[2]=3
+            # in row 1 we get: 3+0,3+1,3+2 ([3]=4,[4]=5,[5]=6)
+            # in row 2 we get: 6+0,6+1,6+2 ([6]=7,[7]=8,[8]=9)
+            col = (row*N) + col
+            print(f"the column is {col}")
+            print(f" @@@@@@ the val is {my_list[col]}")
+
+
+
+
