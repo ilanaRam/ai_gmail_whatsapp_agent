@@ -1,20 +1,14 @@
 import json
 import inspect
-
 from mcp.server.fastmcp import FastMCP # this class creates my MCP server
 import threading # to run MCP server in a thread (9)as it is a blocking functionality)
 import sys
 import os
-#from src.mail_checker import check_email
-# from src.whatsapp_sender import send_whatsapp
-# from src.calendar_checker import connect_to_google_calendar
 import src.mail_checker as check_email
 import src.whatsapp_sender as send_whatsapp
 import src.calendar_checker as calendar
 import src.ai_analyzer as ai_analyzer
 import src.voice as voice
-
-
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -25,13 +19,22 @@ my_mcp_server = FastMCP("ai_gmail_whatsapp_agent")
 
 # this function actually runs MCP server in the thread
 def run_mcp_server():
+    """
+        This function creates MCP server thread and starts it
+        This function does not need to be async as it is normal synchronous code, it just creates and starts a thread. No waiting, so no async needed.
+        The rule is:
+        If the function waits for something external (network, API, file) → async def
+        If the function just organizes/starts things → regular def 👍
+    """
     func_name = inspect.currentframe().f_code.co_name
     print(f"[{func_name}]: called")
 
-    print(f"[{func_name}]: MCP Server thread is starting...")
+    print(f"[{func_name}]: create mcp thread ...")
     # run function 'in a thread' (start MCP server in a background thread)
     mcp_thread = threading.Thread(target=my_mcp_server.run)
+    print(f"[{func_name}]: MCP thread created OK")
     mcp_thread.daemon = True  # thread will stop when main stops
+    print(f"[{func_name}]: start the mcp thread")
     mcp_thread.start()  # start the threads - here will be called mcp.run()
 
 # tool_check_email is a wrapper function that also decorated by mcp server to be called as a mcp tool
@@ -47,13 +50,21 @@ def tool_check_email(from_sender: str, subject: str):
     print(f"[{func_name}]: called")
 
     # tool_check_email actually wraps my function check_email() and returns it's result as a dictionary
-    subject_result, sender_result = check_email.check_email(from_sender=from_sender, subject=subject)
+    subject_result, sender_result, error = check_email.check_email(from_sender=from_sender, subject=subject)
 
-    # good practice to return dict as AI tools easily work with dicts (read and understand dics)
+    if error:
+        return {
+                "status": "failed",
+                "error": str(error),
+                "subject": subject,
+                "sender": from_sender
+               }
     return {
+            "status": "received",
             "subject": subject_result,
             "sender": sender_result
            }
+
 
 # tool_send_whatsapp is a wrapper function that also decorated by mcp server to be called as a mcp tool
 # why we need a wrapper - why we cannot decorate directly the send_whatsapp? Because we wish to make "Separation of Concerns"
@@ -68,24 +79,29 @@ def tool_send_whatsapp(from_sender: str, subject: str):
     print(f"[{func_name}]: called")
 
     # tool_send_whatsapp actually wraps my function send_whatsapp() and returns it's result as a dictionary
-    send_whatsapp.send_whatsapp(subject=subject, sender=from_sender)
+    result = send_whatsapp.send_whatsapp(subject=subject, sender=from_sender)
 
     # good practice to return dict as AI tools easily work with dicts (read and understand dics)
+    if result["status"] == "failed":
+        return {
+                "status": "failed",
+                "error": str(result["error"])
+               }
     return {
-            "status": "sent",
-            "subject": subject,
-            "sender": from_sender
+            "status": "sent"
            }
 
 
 @my_mcp_server.tool()
-async def tool_record_voice_and_convert_voice_to_text() -> dict:
+def tool_record_voice_and_convert_voice_to_text() -> dict:
+    """
+        Records audio from the user's microphone array/headset, automatically detects
+        silence to stop, and returns the transcribed Hebrew text via Whisper.
+    """
+
     func_name = inspect.currentframe().f_code.co_name
     print(f"[{func_name}]: called")
-    """
-    Records audio from the user's microphone array/headset, automatically detects
-    silence to stop, and returns the transcribed Hebrew text via Whisper.
-    """
+
     try:
         # 1. Secure the shared directory path
         results_path = voice.create_results_subfolder()
@@ -127,9 +143,14 @@ def tool_analyze_text(text):
 
     # Pay attention we receive a python obj DICT here
     analyzed_data = ai_analyzer.analyze_text(text)
-
-    # mcp tool can return DICT
-    return analyzed_data
+    if not analyzed_data:
+        return {
+            "status": "failed"
+        }
+    return {
+        "status": "success",
+        "result": analyzed_data # dict in the dict
+    }
 
 
 @my_mcp_server.tool()

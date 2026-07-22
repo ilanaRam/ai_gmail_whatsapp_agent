@@ -20,7 +20,6 @@ import whisper
 import numpy as np
 import datetime
 from dotenv import load_dotenv
-from torch.cuda.tunable import get_results
 import time as python_time
 
 load_dotenv()

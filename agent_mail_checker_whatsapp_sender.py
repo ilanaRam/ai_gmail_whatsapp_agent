@@ -43,20 +43,27 @@ def direct_main():
 
     while True:
 
-        mail_subject, mail_sender = mail_checker_obj.check_email(from_sender=MY_EMAIL,
-                                                                 subject=f"{expected_subject}")
+        mail_subject, mail_sender, error_message = mail_checker_obj.check_email(from_sender=MY_EMAIL,
+                                                                                subject=f"{expected_subject}")
+        if error_message:
+            print(f"{func_name}: Error occurred: {error_message}")
         if not mail_subject or not mail_sender or mail_subject != expected_subject or MY_EMAIL not in mail_sender:
             print(f"{func_name}: NOTHING TO SEND TO WHATSAPP !!!!\n")
         else:
-            whatsapp_obj.send_whatsapp( mail_subject, mail_sender)
+            whatsapp_obj.send_whatsapp(mail_subject, mail_sender)
 
         print(f"{func_name}: wait for: 5sec before next mail check")
         time.sleep(5)
 
 
 async def mcp_main():
+    """
+    mail→WhatsApp flow.
+    """
     func_name = inspect.currentframe().f_code.co_name
     print(f"{func_name}: called")
+
+
 
     # expected_subject = get_user_input()
     expected_subject = "RRR"
@@ -71,10 +78,6 @@ async def mcp_main():
                                                           "from_sender": MY_EMAIL,  # from
                                                           "subject": f"{expected_subject}"  # mail title (subject)
                                                       })
-        # tool returns a dict, here we unbox the dict:
-        # { "subject": subject_result,
-        #    "sender": sender_result }
-
         print(f"Result: {result}\n")
         data = json.loads(result[0].text)
         mail_subject = data["subject"]
@@ -89,21 +92,16 @@ async def mcp_main():
                                                                "from_sender": mail_sender,  # from
                                                                "subject":  f"{mail_subject}"  # mail title (subject)
                                                            })
-            # tool returns a dict, here we unbox the dict:
-            # {
-            #     "status": "sent",
-            #     "subject": subject,
-            #     "sender": from_sender
-            # }
             print(f"tool_send_whatsapp result: {result}\n")
             data = json.loads(result[0].text)
-            status = data["status"]
-            mail_subject = data["subject"]
-            mail_sender = data["sender"]
-            print(f"tool_send_whatsapp result details: mail_subject = {mail_subject}, mail_sender = {mail_sender}, status = {status}\n")
+
+            if data["status"] == "sent":
+                print(f"Message {mail_subject} sent ok")
+            else:
+                print(f"Message {mail_subject} failed to be sent, error: {data["error"]}")
 
         print(f"{func_name}: wait for: 5sec before next mail check")
-        time.sleep(5)
+        await asyncio.sleep(5)
 
 
 if __name__ == "__main__":

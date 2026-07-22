@@ -45,6 +45,7 @@ def check_email(from_sender,
     # if there will not be such mail - will return null
     # if there will be several such mails -> ???
 
+    mail_gmail_server = None
     try:
         # Connect to the gmail mail IMAP server (protocol IMAP to receive mails) in secure way (SSL)
 
@@ -65,13 +66,13 @@ def check_email(from_sender,
                                                          search_criteria) # here we search for UNSEEN (unreaded) mails and also with specific Subject
         if not mails_respond:
             print(f"There were NO new (UNSEEN) mails in gmail mail server ...")
-            return None, None
+            return None, None, None
 
         email_ids_list = mails_respond[0].split() # create a list of newly received mails  (later on I will learn how to listen for the only specific mails not to all
 
         # if there are newly receive mails, then act, else keep iterate
         if not email_ids_list:
-            return None, None
+            return None, None, None
 
         print(f"There were new mail/s in gmail mail server ... with Subject: {subject}")
 
@@ -109,12 +110,17 @@ def check_email(from_sender,
         if subject and from_sender:
             print(f"New mail received with: \nSubject is: {subject}, received From: {from_sender}")
 
-        # after each mail receive - log out
-        mail_gmail_server.logout()
-
         # return any way
-        return subject, from_sender
+        return subject, from_sender, None
     except Exception as e:
         print(colors_dict[2] + f"Error: {e}")
         # print(f"Error: {e}")
-        return None, None  # Always return a pair so the caller doesn't crash!
+        return None, None, e  # Always return 3 values: subject, sender, error
+    finally:
+        # finally block always runs no matter what
+        # always log out, even if an exception or an early return happened above
+        if mail_gmail_server is not None:
+            try:
+                mail_gmail_server.logout()
+            except Exception:
+                pass

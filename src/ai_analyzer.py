@@ -1,6 +1,7 @@
 import os
 import json
 import inspect
+import datetime
 # to use ai generative model
 from google import genai
 # depricated ---> import google.generativeai as genai
@@ -16,6 +17,8 @@ GEMINI_MODEL = "gemini-2.5-flash"
 def analyze_text(my_text: str):
     func_name = inspect.currentframe().f_code.co_name
     print(f"[{func_name}]: called")
+
+    today_date = datetime.datetime.now().strftime('%Y-%m-%d')
 
     client = None
 
@@ -40,8 +43,7 @@ def analyze_text(my_text: str):
 
     my_prompt = f"""
     You are a smart calendar assistant that understands Hebrew speech.
-    Please extract the current Data and Time from user's text
-
+    Today's date is: {today_date}
     The user said: "{my_text}"
 
     Extract the following information from the text arrange the information ikn the json structure and return ONLY a JSON object, no other text:

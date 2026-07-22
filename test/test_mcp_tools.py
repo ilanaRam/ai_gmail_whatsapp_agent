@@ -4,6 +4,127 @@ import os
 import asyncio
 import src.mcp_server as mcp_obj
 import pytest
+from unittest.mock import patch, MagicMock   # <- for mock tests
+
+# my mocks
+
+@pytest.fixture(autouse=True)
+def mock_gmail_to_whatsapp():
+    """
+    this func is fixture - will be called by pytest package automatically
+    'autouse' means context, this fixture (func mock_external_services) will be called for each test that will run without explicitly calling it by each test
+
+    so we have here a factory (Twillio)
+    we use factory Twillio to create a client to create a message (to send)
+    so we need here to mock (to fake) 3 things:
+    1.Twillio factory (we do it by 'with' object)
+    2.client
+    3.create() operation that creates message and returns message.sid
+    """
+
+    print("PART 1 - SETUP - all before yield - creation of all fakes")
+
+   # patch means eplace true by fake, it requires a path for the true, path is built from: package/module/class. Package = src, module = whatsapp_sender, class = Client
+    with patch('src.whatsapp_sender.Client') as fake_twilio_class:
+        """
+        patch fakes the Twillio class 
+        that produces Twillio class obj for us to use 
+        that creates whatsapp message
+        
+        the structure of with patch is: 
+            <- setup runs here
+            yield    <- this must exist else test will ends up even before with block ended - the petch will be removed before test even started
+                        yield keeps the with block open during the test
+                        with yield:    patch starts → setup → yield → TEST RUNS → patch ends
+                        without yield: patch starts → setup → patch ends → TEST RUNS (no fake!) ❌
+                        
+                        yield = means "pause here, run the test, then come back"
+                        It keeps the fake active during the test 👍
+                        
+                        The fixture is called once per test — but yield splits it into two parts:
+            <- teardown runs here
+        """
+        # fake object 1 - fake_twilio_factory - is a Twillio factory that we use to create a client that we use to send message
+
+        # fake object 2 — fake_twilio_client_instance that we use to send message
+        # When code calls Client(...) — instead of real client, returns our fake instance.
+        fake_twilio_client_instance = MagicMock()
+        fake_twilio_client_instance.return_value = fake_twilio_client_instance  # when we call create() we get message.sid of the sent whatsapp message
+
+        # fake object 3 — fake WhatsApp message (result of messages.create() is message.sid)
+        # When code calls client.messages.create(...) — returns our fake message.
+        fake_whatsapp_message  = MagicMock()
+        fake_whatsapp_message.sid = "WHATSAPP_MSG_ID_000"
+        fake_twilio_client_instance.messages.create.return_value = fake_whatsapp_message
+
+
+        # now connect the chain that will replace real api and real object by faked one during the test run
+        # tell patch: when Client(...) is called → return fake_twilio_client_instance
+        fake_twilio_class.return_value = fake_twilio_client_instance
+
+        yield  # ← pause here, test runs
+
+        # PART 2 - after yield (cleanup)
+        # 'with' block closes automatically here — real Client restored
+
+
+@pytest.fixture(autouse=True)
+def mock_voice_to_calendar():
+    """
+    this func is fixture - will be called by pytest package automatically
+    'autouse' means context, this fixture (func mock_external_services) will be called for each test that will run without explicitly calling it by each test
+
+    so we have here a factory (Google Calendar)
+    we use factory Google Calendar to create a Google connection to set event in the Google Calendar
+    so we need here to mock (to fake) 3 things:
+    1.Google Calendar factory (we do it by 'with' object)
+    2.client
+    3.execute() operation that creates a link to Google Calendar event
+    """
+
+    print("PART 1 - SETUP - all before yield - creation of all fakes")
+
+    # patch means eplace true by fake, it requires a path for the true, path is built from: package/module/class. Package = src, module = whatsapp_sender, class = Client
+    with patch('src.whatsapp_sender.build') as fake_Google_Calendar_class:
+        """
+        patch fakes the Google_Calendar_class 
+        that produces Google_Calendar_class obj for us to use 
+        that creates event
+
+        the structure of with patch is: 
+            <- setup runs here
+            yield    <- this must exist else test will ends up even before with block ended - the petch will be removed before test even started
+                        yield keeps the with block open during the test
+                        with yield:    patch starts → setup → yield → TEST RUNS → patch ends
+                        without yield: patch starts → setup → patch ends → TEST RUNS (no fake!) ❌
+
+                        yield = means "pause here, run the test, then come back"
+                        It keeps the fake active during the test 👍
+
+                        The fixture is called once per test — but yield splits it into two parts:
+            <- teardown runs here
+        """
+        # fake object 1 - fake_Google_Calendar_class - is a Google_Calendar factory that we use to create a client that we use to set event
+
+        # fake object 2 — fake_Google_Calendar_client_instance that we use to set event
+        # When code calls Client(...) — instead of real client, returns our fake instance.
+        fake_Google_Calendar_client_instance = MagicMock()
+        fake_Google_Calendar_client_instance.return_value = fake_Google_Calendar_client_instance  # when we call create() we get message.sid of the sent whatsapp message
+
+        # fake object 3 — fake WhatsApp message (result of messages.create() is message.sid)
+        # When code calls client.messages.create(...) — returns our fake message.
+        fake_Google_Calendar_event = MagicMock()
+        fake_Google_Calendar_event.link = "Google_Calendar_event_link_0001"
+        fake_Google_Calendar_client_instance.execute.return_value = fake_Google_Calendar_event
+
+        # now connect the chain that will replace real api and real object by faked one during the test run
+        # tell patch: when Client(...) is called → return fake_twilio_client_instance
+        fake_Google_Calendar_class.return_value = fake_Google_Calendar_client_instance
+
+        yield  # ← pause here, test runs
+
+        # PART 2 - after yield (cleanup)
+        # 'with' block closes automatically here — real Client restored
 
 
 # ---------------------------------------------------------
@@ -17,6 +138,7 @@ import pytest
 # to handle this asynchronous way Python has a package , called: asyncio
 
 # by using "async" we tell Python: This function may have to wait for something — don't block everything else while waiting
+@pytest.mark.asyncio
 async def test_check_email_tool():
     # Test tool_check_email
     print("Testing MCP tool: check_email_tool()\n")
@@ -26,12 +148,15 @@ async def test_check_email_tool():
     # await means: "Wait for this to finish — but while waiting, let other things run"
     # await can be used only inside async function !!!
     # await is like a waiter that take orders and give a chef to prepare them, waiter (awaiter) does something else while a chef (async tool func) prepares the dish.
-    result = await mcp_obj.my_mcp_server.call_tool("tool_check_email",                               # tool name
+    result = await mcp_obj.my_mcp_server.call_tool("tool_check_email",                                 # tool name
                                                     {                                                  # params that tool function receives:
                                                         "from_sender": "ilanaaprilloriram@gmail.com",  # from
                                                         "subject": "RRR"                               # mail title (subject)
                                                     })
-    print(f"Result of the test for: tool_check_email: {result}\n")
+    data = json.loads(result[0].text)
+    print(f"Result of the test for: tool_check_email: {data}")
+    assert data['status'] == "received", f"❌ FAIL: The error is: {data['error']}"
+    print(f"✅ PASS: Test behaved exactly as expected.")
 
     # we got the result:
     # tool_check_email result: [TextContent(type='text', text='{\n  "subject": null,\n  "sender": null\n}', annotations=None, meta=None)]
@@ -52,7 +177,7 @@ async def test_check_email_tool():
     # }
     # in my GMAIL was fresh mail with Subject: "RRR", and from sender: "ilanaaprilloriram@gmail.com"
 
-
+@pytest.mark.asyncio
 async def test_send_whatsapp_tool():
     print("Testing MCP tool: send_whatsapp_tool()\n")
 
@@ -62,54 +187,51 @@ async def test_send_whatsapp_tool():
                                                         "subject": "RRR"                               # mail title (subject)
                                                     })
     print(f"Result of the test for: tool_send_whatsapp: {result}\n")
+    data = json.loads(result[0].text)
+    assert data['status'] == "sent", f"❌ FAIL: The error is: {data['error']}"
+    print(f"✅ PASS: Test behaved exactly as expected.")
 
 
-# async def test_connect_to_google_calendar_tool():
-#     print("Testing MCP tool: connect_to_google_calendar_tool()\n")
-#     result = await mcp_obj.my_mcp_server.call_tool("tool_connect_to_google_calendar", # tool name
-#                                                    {})                                # params
-#     data = json.loads(result[0].text)
-#     status = data["status"]
-#     print(f"Result of the test for: tool_connect_to_google_calendar: {status}\n")
-#
-#     assert status != "connected", print(f"❌ FAIL: Test Failed', returned: '{result["status"]}")
-#     print(f"✅ PASS: Test behaved exactly as expected.")
-
-
+@pytest.mark.asyncio
 async def test_analyze_text_tool():
     print("Testing MCP tool: analyze_text_tool() \n")
     my_text = "היום אנו בתאריך 02/06/2026 בוא נקבע פגישה עם אלכס מחר בשעה שלוש אחר הצהריים לדון בפרויקט"
+
     result = await mcp_obj.my_mcp_server.call_tool("tool_analyze_text",  # tool name
                                                    {"text": my_text})    # params
     print(f"Result of the test for: tool_analyze_text: {result}\n")
+    data = json.loads(result[0].text)
+    assert data["status"] == "success", f"❌ FAIL: The error is: {data['error']}"
+    print(f"Analyzed data is: {data["result"]}")
+    print(f"✅ PASS: Test behaved exactly as expected.")
 
 
+
+@pytest.mark.asyncio
 async def test_create_google_calendar_event_tool_empty_data():
     print("Testing MCP tool: connect google calendar + create event with empty event data \n")
 
-    print(f"Preparing Mock event data ...")
-    mock_event_data = {}
-    print(f"Mock event data is ready:\n{mock_event_data}")
+    """
+    MCP:            throws a real exception (ToolError) — not a return value
+    pytest.raises:  catches it and marks test as passed ✅
+    Without it — the exception causes test to fail ❌
+    """
 
-    print(f"Connecting Google Calendar + setting event")
-    result = await mcp_obj.my_mcp_server.call_tool("tool_connect_google_calendar_create_event",  # tool name
-                                                   {})  # params that the tool receives
-    if json.loads(result[0].text)['status'] != 'connected':
-        return {"status": "failed"}
+    # we expect that mcp tool raise exception upon empty event - exception is correct behavior
+    # so in case exception is expected behavior we must write this way only
+    with pytest.raises(Exception) as exception_info:
+        result = await mcp_obj.my_mcp_server.call_tool("tool_set_google_calendar_event",
+                                                       {}) # empty — MCP will raise before function runs
+        # we never reach here! upon exception the execution jumps out of with block immediately
+    print(f"✅ PASS: Test behaved exactly as expected, expected exception error is: {exception_info}")
 
-    print(f"Result of the test for: tool_create_google_calendar_event: {result}\n")
 
 
+@pytest.mark.asyncio
 async def test_create_google_calendar_event_tool_full_data():
     print("Testing MCP tool: create_google_calendar_event_tool() \n")
 
-    print("First creating Google Calendar service obj ...")
-    result = await mcp_obj.my_mcp_server.call_tool("tool_connect_to_google_calendar",  # tool name
-                                                   {})  #
-    if json.loads(result[0].text)['status'] != 'connected':
-        return {"status": "failed"}
-
-    print(f"Preparing Mock event data ...")
+    print(f"Preparing Mock full and correct event data ...")
     mock_event_data = {
         'title': 'פגישה עם אלכס',
         "participants": ["Alex", "Ilana"],
@@ -124,15 +246,31 @@ async def test_create_google_calendar_event_tool_full_data():
     }
     print(f"Mock event data is ready:\n{mock_event_data}")
     print(f"Creating the Google Calendar event ...")
-    result = await mcp_obj.my_mcp_server.call_tool("tool_create_google_calendar_event", # tool name
-                                                   {"event_data": mock_event_data})     # params
-    print(f"Result of the test for: tool_create_google_calendar_event: {result}\n")
+    result = await mcp_obj.my_mcp_server.call_tool("tool_set_google_calendar_event", # tool name
+                                                   {"event_data": mock_event_data})  # params
+    print(f"Result of the test for: test_create_google_calendar_event_tool_full_data: {result}\n")
+    data = json.loads(result[0].text)
 
+    assert data['status'] == 'success', f"❌ FAIL: The error is: {data['error']}"
+    print(f"Event message: : {data["message"]}, link to event: {data["event_link"]}")
+    print(f"✅ PASS: Test behaved exactly as expected.")
+
+
+async def create_google_calendar_event_tool_full_data(event_dict_test_data):
+    print("Testing MCP tool: create_google_calendar_event_tool() \n")
+
+    print(f"Mock (test) data is: {event_dict_test_data}")
+
+    print(f"Creating the Google Calendar event ...")
+    result = await mcp_obj.my_mcp_server.call_tool("tool_set_google_calendar_event", # tool name
+                                                   {"event_data": event_dict_test_data})  # params
+    print(f"Result of the test: {result}\n")
+    return result
 
 
 # Step 1 - Test cases:
 TEST_CASES = [
-                # missing fields
+                # missing fields cases
                 {
                     "test_name": "Missing 'title' Field (Should Fail)",
                     "mock_test_data": {
@@ -362,34 +500,24 @@ TEST_CASES = [
             ]
 
 # Step 2 - Building the Parameterized Loop Function - that will run the above test cases
-async def test_create_google_calendar_event_tool_missing_fields_parameterized():
+@pytest.mark.asyncio
+async def test_create_google_calendar_event_tool_missing_fields():
     print("=== Starting Parameterized MCP Tool Tests, that will handle missing fields cases ===\n")
-
-    print("Initializing Google Calendar service via MCP...")
-    connection_result = await mcp_obj.my_mcp_server.call_tool("tool_connect_to_google_calendar",
-                                                              {})
-
-    if json.loads(connection_result[0].text)['status'] != 'connected':
-        print("CRITICAL: Calendar service failed to connect. Aborting all tests.")
-        return
 
     # Manual loop through the global TEST_CASES list defined above - it is nice but not pythonic way
     for case in TEST_CASES:
         print(f"\n--- Running Test Case: {case['test_name']} ---")
+        result = await create_google_calendar_event_tool_full_data(case)
+        print(f"Result of the test case is: {result}\n")
 
-        print(f"Creating the Google Calendar event ...")
-        result = await mcp_obj.my_mcp_server.call_tool("tool_create_google_calendar_event",
-                                                        {"event_data": case['mock_test_data']}
-                                                      )
-        actual_status = json.loads(result[0].text)['status']
-        print(f"Result: Actual Status = '{actual_status}' | Expected Status = '{case['expected_test_status']}'")
+        data = json.loads(result[0].text)
+        assert data['status'] == case['expected_test_status'], f"❌ FAIL: expected '{case['expected_test_status']}' but got {data['status']}"
 
-        if actual_status == case['expected_test_status']:
-            print(f"✅ PASS: Test Case '{case['test_name']}' behaved exactly as expected.")
-        else:
-            print(f"❌ FAIL: Test Case '{case['test_name']}' returned '{actual_status}' but expected '{case['expected_test_status']}'.")
-
+        if data['status'] == 'success':
+            print(f"Event message: : {data["message"]}, link to event: {data["event_link"]}")
+        print(f"✅ PASS: Test behaved exactly as expected.")
     print("\n=== All Test Cases Completed ===")
+
 
 
  # ============Pytest, Pythonic way ====================================
@@ -837,11 +965,12 @@ async def test_create_google_calendar_event_tool_parameterized(test_case_name, m
     result = await mcp_obj.my_mcp_server.call_tool("tool_set_google_calendar_event",
                                                     {"event_data": mock_test_data_dict}
                                                   )
-    actual_test_status = json.loads(result[0].text)['status']
-    print(f"Result: Actual Status = '{actual_test_status}' | Expected Status = '{expected_test_status}'")
+    data = json.loads(result[0].text)
+    assert data['status'] == expected_test_status, f"❌ FAIL: expected '{expected_test_status}' but got {data['status']}"
 
-    assert actual_test_status == expected_test_status, print(f"❌ FAIL: Test Case '{test_case_name}' returned '{actual_test_status}' but expected '{expected_test_status}'.")
-    print(f"✅ PASS: Test Case '{test_case_name}' behaved exactly as expected.")
+    if data['status'] == 'success':
+        print(f"Event message: : {data["message"]}, link to event: {data["event_link"]}")
+    print(f"✅ PASS: Test behaved exactly as expected.")
 
 def test_2d_list_print():
     #          0 1 2

@@ -79,7 +79,7 @@ def validity_check(google_calendar_event: dict):
         print(f"[{func_name}]: ERROR — google_calendar_event_data is missing data in field: 'date'")
         return None
     if not isinstance(google_calendar_event['date'], str):
-        print(f"[{func_name}]: ERROR — google_calendar_event_data has incorrect data type in field: 'date': {google_calendar_event['alert_minutes_before']}")
+        print(f"[{func_name}]: ERROR — google_calendar_event_data has incorrect data type in field: 'date': {google_calendar_event['date']}")
         return None
 
     # time
@@ -151,7 +151,6 @@ def connect_to_google_calendar():
     Then every next run after → uses token.json automatically — no login needed
     :return: calendar_service_obj  --> this obj to the google calendar connection
     """
-
     func_name = inspect.currentframe().f_code.co_name
     print(f"[{func_name}]: called")
 
@@ -190,10 +189,10 @@ def connect_to_google_calendar():
                                 'v3',
                                 credentials=my_app_creds)
     if calendar_service_obj:
-        print(f"[{func_name}]: App is connected to Google Calendar successfully, calendar_service_obj is: {calendar_service_obj}")
+        print(f"[{func_name}]: App succeeded to create a 'real' connection to Google Calendar, calendar_service_obj is: {calendar_service_obj}")
         return calendar_service_obj
     else:
-        print(f"[{func_name}]: App failed to connect to Google Calendar ###")
+        print(f"[{func_name}]: App failed to create a 'real' connection to Google Calendar ###")
         return None
 
 
@@ -238,7 +237,8 @@ def create_google_calendar_event(google_calendar_event_data: dict,
     # build google calendar event obj that Google Calendar API expects
     event = {
             'summary': google_calendar_event_data['title'],
-            'description': google_calendar_event_data.get('description', ''),
+            'attendees': [{'email': os.getenv('ALEX_EMAIL')}] if google_calendar_event_data.get('alex_calendar') else [], # ← add Alex as attendee
+            'description': google_calendar_event_data.get('description', 'No Title'),
             'start': {
                 'dateTime': start_iso,
                 'timeZone': 'Asia/Jerusalem'
@@ -256,14 +256,15 @@ def create_google_calendar_event(google_calendar_event_data: dict,
                 ]
             }
     }
+    print(f"[{func_name}]: Google Calendar event structure is ready")
 
-    # insert event into calendar
-    # !!! connect_to_google_calendar() must run first to initiate the calendar_service_obj, else it will be None and will not have .events()
-    print(f"[{func_name}]: Google Calendar event structure is ready, we can create the event")
-    created_event = google_calendar_service.events().insert(calendarId='primary',
-                                                            body=event).execute()
+    # creation of the event in the calendar = insert event into calendar
+    print(f"[{func_name}]: We are about to create the 'real' google calendar event")
+    created_event = google_calendar_service.events().insert(calendarId='primary',        # ← this means: ALWAYS goes to YOUR calendar only!, will be fixed when Alex's Calendar will be added
+                                                            body=event,
+                                                            sendUpdates='all').execute() # ← this means: Alex will get too the email notification
 
-    print(f"[{func_name}]: Google Calendar event - created in the Google Calendar successfully VVV")
+    print(f"[{func_name}]: Successfully created a 'real' Google Calendar event in the Google Calendar  VVV")
     print(f"[{func_name}]: Event link: {created_event.get('htmlLink')}")
     return created_event
 
@@ -272,8 +273,11 @@ def create_google_calendar_event(google_calendar_event_data: dict,
 
 if __name__ == "__main__":
     # 1.creates (initiates) the global google calendar service obj
-    connect_to_google_calendar()
+    service = connect_to_google_calendar()
 
+    if not service:
+        print(f"Failed ! to create Google Calendar service")
+        exit()
     # 2.create moc data - as if the data came from ai_analyzer tool
     mock_event = {
             'title': 'תור לאלכס לרופא שיניים',
@@ -289,7 +293,8 @@ if __name__ == "__main__":
         }
 
     # 3.create google calendar event basing on moc data in my calendar
-    result = create_google_calendar_event(google_calendar_event_data=mock_event)
+    result = create_google_calendar_event(google_calendar_event_data=mock_event,
+                                          google_calendar_service=service)
     if result:
         print(f"\nSuccess! Event created in Google Calendar.")
         print(f"Event Link: {result.get('htmlLink')}")
