@@ -55,6 +55,7 @@ async def test_check_email_tool():
     # }
     # in my GMAIL was fresh mail with Subject: "RRR", and from sender: "ilanaaprilloriram@gmail.com"
 
+
 @pytest.mark.asyncio
 async def test_send_whatsapp_tool():
     print("Testing MCP tool: send_whatsapp_tool()\n")
@@ -84,7 +85,6 @@ async def test_analyze_text_tool():
     print(f"✅ PASS: Test behaved exactly as expected.")
 
 
-
 @pytest.mark.asyncio
 async def test_create_google_calendar_event_tool_empty_data():
     print("Testing MCP tool: connect google calendar + create event with empty event data \n")
@@ -102,7 +102,6 @@ async def test_create_google_calendar_event_tool_empty_data():
                                                        {}) # empty — MCP will raise before function runs
         # we never reach here! upon exception the execution jumps out of with block immediately
     print(f"✅ PASS: Test behaved exactly as expected, expected exception error is: {exception_info}")
-
 
 
 @pytest.mark.asyncio
@@ -131,20 +130,8 @@ async def test_create_google_calendar_event_tool_full_data():
 
     assert data['status'] == 'success', f"❌ FAIL: The error is: {data['error']}"
     print(f"Event message: : {data["message"]}, link to event: {data["event_link"]}")
+    assert data["event_link"] == "https://calendar.google.com/mock-event-link"  # ← fake link!
     print(f"✅ PASS: Test behaved exactly as expected.")
-
-
-async def create_google_calendar_event_tool_full_data(event_dict_test_data):
-    print("Testing MCP tool: create_google_calendar_event_tool() \n")
-
-    print(f"Mock (test) data is: {event_dict_test_data}")
-
-    print(f"Creating the Google Calendar event ...")
-    result = await mcp_obj.my_mcp_server.call_tool("tool_set_google_calendar_event", # tool name
-                                                   {"event_data": event_dict_test_data})  # params
-    print(f"Result of the test: {result}\n")
-    return result
-
 
 # Step 1 - Test cases:
 TEST_CASES = [
@@ -384,18 +371,30 @@ async def test_create_google_calendar_event_tool_missing_fields():
 
     # Manual loop through the global TEST_CASES list defined above - it is nice but not pythonic way
     for case in TEST_CASES:
+        """
+        Each entry in TEST_CASES looks like:
+        {
+            "test_name": "Missing 'title' Field (Should Fail)",
+            "mock_test_data": { ...the actual event fields... },  <--- we need to deliver this
+            "expected_test_status": "failed"
+        }
+        """
         print(f"\n--- Running Test Case: {case['test_name']} ---")
-        result = await create_google_calendar_event_tool_full_data(case)
-        print(f"Result of the test case is: {result}\n")
 
+        print(f"Creating the Google Calendar event ...")
+        result = await mcp_obj.my_mcp_server.call_tool("tool_set_google_calendar_event",  # tool name
+                                                       {"event_data": case['mock_test_data']})  # params
+        print(f"Result of the test: {result}\n")
         data = json.loads(result[0].text)
-        assert data['status'] == case['expected_test_status'], f"❌ FAIL: expected '{case['expected_test_status']}' but got {data['status']}"
+
+        # in case of case passed although expected to fail we will not have error in resulted dic
+        assert data['status'] == case['expected_test_status'], \
+            f"❌ FAIL: expected '{case['expected_test_status']}' but got '{data['status']}', error: {data.get('error', 'no error field - status was success')}"
 
         if data['status'] == 'success':
             print(f"Event message: : {data["message"]}, link to event: {data["event_link"]}")
         print(f"✅ PASS: Test behaved exactly as expected.")
     print("\n=== All Test Cases Completed ===")
-
 
 
  # ============Pytest, Pythonic way ====================================
@@ -844,7 +843,10 @@ async def test_create_google_calendar_event_tool_parameterized(test_case_name, m
                                                     {"event_data": mock_test_data_dict}
                                                   )
     data = json.loads(result[0].text)
-    assert data['status'] == expected_test_status, f"❌ FAIL: expected '{expected_test_status}' but got {data['status']}"
+
+    # in case of case passed although expected to fail we will not have error in resulted dic
+    assert data['status'] == expected_test_status, \
+        f"❌ FAIL: expected '{expected_test_status}' but got '{data['status']}', error: {data.get('error', 'no error field - status was success')}"
 
     if data['status'] == 'success':
         print(f"Event message: : {data["message"]}, link to event: {data["event_link"]}")
