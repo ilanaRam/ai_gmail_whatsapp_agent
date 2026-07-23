@@ -4,128 +4,6 @@ import os
 import asyncio
 import src.mcp_server as mcp_obj
 import pytest
-from unittest.mock import patch, MagicMock   # <- for mock tests
-
-# my mocks
-
-@pytest.fixture(autouse=True)
-def mock_gmail_to_whatsapp():
-    """
-    this func is fixture - will be called by pytest package automatically
-    'autouse' means context, this fixture (func mock_external_services) will be called for each test that will run without explicitly calling it by each test
-
-    so we have here a factory (Twillio)
-    we use factory Twillio to create a client to create a message (to send)
-    so we need here to mock (to fake) 3 things:
-    1.Twillio factory (we do it by 'with' object)
-    2.client
-    3.create() operation that creates message and returns message.sid
-    """
-
-    print("PART 1 - SETUP - all before yield - creation of all fakes")
-
-   # patch means eplace true by fake, it requires a path for the true, path is built from: package/module/class. Package = src, module = whatsapp_sender, class = Client
-    with patch('src.whatsapp_sender.Client') as fake_twilio_class:
-        """
-        patch fakes the Twillio class 
-        that produces Twillio class obj for us to use 
-        that creates whatsapp message
-        
-        the structure of with patch is: 
-            <- setup runs here
-            yield    <- this must exist else test will ends up even before with block ended - the petch will be removed before test even started
-                        yield keeps the with block open during the test
-                        with yield:    patch starts → setup → yield → TEST RUNS → patch ends
-                        without yield: patch starts → setup → patch ends → TEST RUNS (no fake!) ❌
-                        
-                        yield = means "pause here, run the test, then come back"
-                        It keeps the fake active during the test 👍
-                        
-                        The fixture is called once per test — but yield splits it into two parts:
-            <- teardown runs here
-        """
-        # fake object 1 - fake_twilio_factory - is a Twillio factory that we use to create a client that we use to send message
-
-        # fake object 2 — fake_twilio_client_instance that we use to send message
-        # When code calls Client(...) — instead of real client, returns our fake instance.
-        fake_twilio_client_instance = MagicMock()
-        fake_twilio_client_instance.return_value = fake_twilio_client_instance  # when we call create() we get message.sid of the sent whatsapp message
-
-        # fake object 3 — fake WhatsApp message (result of messages.create() is message.sid)
-        # When code calls client.messages.create(...) — returns our fake message.
-        fake_whatsapp_message  = MagicMock()
-        fake_whatsapp_message.sid = "WHATSAPP_MSG_ID_000"
-        fake_twilio_client_instance.messages.create.return_value = fake_whatsapp_message
-
-
-        # now connect the chain that will replace real api and real object by faked one during the test run
-        # tell patch: when Client(...) is called → return fake_twilio_client_instance
-        fake_twilio_class.return_value = fake_twilio_client_instance
-
-        yield  # ← pause here, test runs
-
-        # PART 2 - after yield (cleanup)
-        # 'with' block closes automatically here — real Client restored
-
-
-@pytest.fixture(autouse=True)
-def mock_voice_to_calendar():
-    """
-    this func is fixture - will be called by pytest package automatically
-    'autouse' means context, this fixture (func mock_external_services) will be called for each test that will run without explicitly calling it by each test
-
-    so we have here a factory (Google Calendar)
-    we use factory Google Calendar to create a Google connection to set event in the Google Calendar
-    so we need here to mock (to fake) 3 things:
-    1.Google Calendar factory (we do it by 'with' object)
-    2.client
-    3.execute() operation that creates a link to Google Calendar event
-    """
-
-    print("PART 1 - SETUP - all before yield - creation of all fakes")
-
-    # patch means eplace true by fake, it requires a path for the true, path is built from: package/module/class. Package = src, module = whatsapp_sender, class = Client
-    with patch('src.whatsapp_sender.build') as fake_Google_Calendar_class:
-        """
-        patch fakes the Google_Calendar_class 
-        that produces Google_Calendar_class obj for us to use 
-        that creates event
-
-        the structure of with patch is: 
-            <- setup runs here
-            yield    <- this must exist else test will ends up even before with block ended - the petch will be removed before test even started
-                        yield keeps the with block open during the test
-                        with yield:    patch starts → setup → yield → TEST RUNS → patch ends
-                        without yield: patch starts → setup → patch ends → TEST RUNS (no fake!) ❌
-
-                        yield = means "pause here, run the test, then come back"
-                        It keeps the fake active during the test 👍
-
-                        The fixture is called once per test — but yield splits it into two parts:
-            <- teardown runs here
-        """
-        # fake object 1 - fake_Google_Calendar_class - is a Google_Calendar factory that we use to create a client that we use to set event
-
-        # fake object 2 — fake_Google_Calendar_client_instance that we use to set event
-        # When code calls Client(...) — instead of real client, returns our fake instance.
-        fake_Google_Calendar_client_instance = MagicMock()
-        fake_Google_Calendar_client_instance.return_value = fake_Google_Calendar_client_instance  # when we call create() we get message.sid of the sent whatsapp message
-
-        # fake object 3 — fake WhatsApp message (result of messages.create() is message.sid)
-        # When code calls client.messages.create(...) — returns our fake message.
-        fake_Google_Calendar_event = MagicMock()
-        fake_Google_Calendar_event.link = "Google_Calendar_event_link_0001"
-        fake_Google_Calendar_client_instance.execute.return_value = fake_Google_Calendar_event
-
-        # now connect the chain that will replace real api and real object by faked one during the test run
-        # tell patch: when Client(...) is called → return fake_twilio_client_instance
-        fake_Google_Calendar_class.return_value = fake_Google_Calendar_client_instance
-
-        yield  # ← pause here, test runs
-
-        # PART 2 - after yield (cleanup)
-        # 'with' block closes automatically here — real Client restored
-
 
 # ---------------------------------------------------------
 # async def      This function may wait for something
@@ -988,7 +866,7 @@ def test_2d_list_print():
             # in row = 0 we get: [0]=1,[1]=2,[2]=3
             # in row 1 we get: 3+0,3+1,3+2 ([3]=4,[4]=5,[5]=6)
             # in row 2 we get: 6+0,6+1,6+2 ([6]=7,[7]=8,[8]=9)
-            col = (row*N) + col
+            col = (row*N) + col  # < ----------------------------------------------- @!!!!@
             print(f"the column is {col}")
             print(f" @@@@@@ the val is {my_list[col]}")
 

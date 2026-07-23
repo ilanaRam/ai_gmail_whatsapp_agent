@@ -33,7 +33,7 @@ def send_whatsapp(subject,
     func_name = inspect.currentframe().f_code.co_name
     print(f"func: {func_name}() - called")
 
-    # create a Twilio Client side
+    # create a Twilio Client side - connect to Twillio
     print(f"define 'real' Twilio client connection obj - to work with Twilio sandbox")
     client = Client(TWILIO_SID, TWILIO_AUTH_TOKEN)
     print(f"Twilio account SID: {client}")
