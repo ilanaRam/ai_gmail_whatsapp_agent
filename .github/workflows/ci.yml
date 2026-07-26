@@ -1,0 +1,43 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - dev
+
+jobs:
+  test-and-tag:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          pip install mcp
+          pip install google-generativeai
+          pip install google-genai
+          pip install google-api-python-client google-auth-httplib2 google-auth-oauthlib
+          pip install twilio
+          pip install python-dotenv
+          pip install pytest pytest-asyncio
+          pip install openai-whisper
+          pip install sounddevice soundfile
+
+      - name: Run tests
+        run: |
+          pytest test/test_mcp_tools.py -v
+
+      - name: Create version tag
+        if: success()
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git tag v$(date +'%Y.%m.%d.%H%M')
+          git push origin --tags
