@@ -852,6 +852,10 @@ async def test_create_google_calendar_event_tool_parameterized(test_case_name, m
         print(f"Event message: : {data["message"]}, link to event: {data["event_link"]}")
     print(f"✅ PASS: Test behaved exactly as expected.")
 
+
+# ----------------------------------------------
+# test func that have nothing with main projects
+# ----------------------------------------------
 def test_2d_list_print():
     #          0 1 2
     my_list = [1,2,3, # 0
@@ -872,6 +876,108 @@ def test_2d_list_print():
             print(f"the column is {col}")
             print(f" @@@@@@ the val is {my_list[col]}")
 
+
+STARTED = "started"
+IN_PROGRESS = "in_progress"
+COMPLETED = "completed"
+
+sessions_states_1 = [  {'id': 1, 'state': COMPLETED },
+                       {'id': 2, 'state': STARTED},
+                       {'id': 4, 'state': STARTED},
+                       {'id': 3, 'state': IN_PROGRESS},
+                       {'id': 2, 'state': COMPLETED},
+                       {'id': 1, 'state': IN_PROGRESS},
+                       {'id': 3, 'state': STARTED},
+                       {'id': 1, 'state': STARTED},
+                       {'id': 2, 'state': IN_PROGRESS},
+                       {'id': 4, 'state': COMPLETED }]
+
+sessions_states_2 = [{'id': 1, 'state': COMPLETED },
+                     {'id': 2, 'state': STARTED},
+                     {'id': 4, 'state': STARTED},
+                     {'id': 3, 'state': IN_PROGRESS}]
+
+sessions_states_3 = []
+
+sessions_states_4 = [{'id': 1, 'state': COMPLETED },
+                     {'id': 1, 'state': STARTED},
+                     {'id': 1, 'state': STARTED}]
+
+sessions_states_5 = [{'id': 1},
+                     {'id': 2, 'state': None}, # in this case .get return None like of the key was missing
+                     {'id': 4, 'state': STARTED},
+                     {'id': 3, 'state': IN_PROGRESS}]
+
+sessions_states_6 = [{'id': 1, 'state': STARTED },
+                     {'id': 2, 'state': STARTED},
+                     {'id': 2, 'state': IN_PROGRESS},
+                     {'id': 1, 'state': IN_PROGRESS},
+                     {'id': 1, 'state': COMPLETED},
+                     {'id': 2, 'state': COMPLETED},
+                     {'id': 2, 'state': COMPLETED},
+                     {'id': 3, 'state': COMPLETED}]
+
+from collections import  defaultdict
+
+def test_check_states():
+    sessions_states = sessions_states_6
+    assert len(sessions_states) != 0,  f"empty list of sessions"
+
+    # build dict basing on list of items
+    sessions_dict = defaultdict(list)
+    correct_ids = []
+
+    for item in sessions_states:
+        # item is of type dict
+        if len(item) < 2:
+            print(f"not enough info about a sessions")
+            continue
+
+        # .get(key, default = None)  is a pythonic way to extract value by key. if not such key will return None,
+
+        if 'id' not in item:
+            print(f"'id' not in item")
+            continue
+
+        if item['id'] is None:
+            print(f"Key 'id' exists but missing a value")
+            continue
+
+        if 'state' not in item:
+            print(f"'state' not in item")
+            continue
+
+        if item['state'] is None:
+            print(f"Key 'state' exists but missing a value")
+            continue
+
+        session_id = item['id']
+        state = item['state']
+
+        # if it is new id and we yet have a list of states for it, add id. add empty list for it
+        if not sessions_dict.get(item['id'], None):
+            sessions_dict[session_id] = list()
+            # add a state into list only if it is STARTED
+            if state == STARTED:
+                sessions_dict[session_id].append(state)
+        else:
+            # id exists, list exists - add state only if state is in correct order
+            # do checks before append, that 'in_progress' is added after 'started', and 'completed' after 'in_progress and no duplicates
+            if state == STARTED and len(sessions_dict[session_id]) == 0 or \
+               state == IN_PROGRESS and STARTED in sessions_dict[session_id] or \
+               state == COMPLETED and IN_PROGRESS in sessions_dict[session_id] and STARTED in sessions_dict[session_id] and COMPLETED not in sessions_dict[session_id]:
+                sessions_dict[session_id].append(state)
+                print(f"Id {session_id}: {sessions_dict[session_id]}")
+
+                if len(sessions_dict[session_id]) == 3:
+                    print(f"Correct id: {session_id} ")
+                    correct_ids.append(session_id)
+            else:
+                print(f"state {state} was not entered into dict for item: {session_id}")
+    print(f"Sessions are: \n")
+    print(sessions_dict, end='\n')
+    print(f"Correct ids (the ones that have all states in correct order) are: \n")
+    print(correct_ids, end='\n')
 
 
 
