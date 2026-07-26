@@ -26,6 +26,7 @@ jobs:
           pip install google-api-python-client google-auth-httplib2 google-auth-oauthlib
           pip install twilio
           pip install python-dotenv
+          pip install colorama
           pip install pytest pytest-asyncio
           pip install openai-whisper
           pip install sounddevice soundfile
