@@ -30,6 +30,8 @@ jobs:
           pip install pytest pytest-asyncio
           pip install openai-whisper
           pip install sounddevice soundfile
+          sudo apt-get update
+          sudo apt-get install -y portaudio19-dev
 
       - name: Run tests
         run: |
