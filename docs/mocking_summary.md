@@ -109,7 +109,7 @@ with patch('src.calendar_checker.connect_to_google_calendar') as fake_connect:
 
 ---
 
-### 4. Gemini AI Mock (`mock_gmini_ai_analyzer`)
+### 4. Gemini AI Mock (`mock_gemini_ai_analyzer`)
 
 **Real code patched:**
 ```python
